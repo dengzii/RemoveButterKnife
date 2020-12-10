@@ -1,0 +1,43 @@
+<idea-plugin url="https://github.com/dengzii/RemoveButterKnife">
+
+    <id>com.dengzii.plugin.rbk</id>
+    <name>Remove ButterKnife</name>
+    <version>1.0.0</version>
+
+    <vendor email="dengzii@foxmail.com" url="https://github.com/dengzii">dengzii</vendor>
+
+    <description>
+        <![CDATA[
+      Remove ButterKnife annotations and auto replace with findViewById.
+      ]]>
+    </description>
+
+    <change-notes>
+        <![CDATA[
+      1.0.0<br>
+      Remove ButterKnife annotations, generate bindView method include findViewById codes.
+      ]]>
+    </change-notes>
+
+
+    <idea-version since-build="173.0"/>
+
+    <depends>com.intellij.modules.java</depends>
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+
+    </extensions>
+
+    <actions>
+
+        <action id="com.dengzii.plugin.rbk.action.main"
+                class="com.dengzii.plugin.rbk.MainAction"
+                text="Remove ButterKnife"
+                description="Remove ButterKnife annotations in this class and generate binding view id code.">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt 2"/>
+        </action>
+    </actions>
+
+</idea-plugin>
