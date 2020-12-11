@@ -1,42 +1,27 @@
 <idea-plugin url="https://github.com/dengzii/RemoveButterKnife">
 
-    <id>com.dengzii.plugin.rbk</id>
     <name>Remove ButterKnife</name>
+    <id>com.dengzii.plugin.rbk</id>
     <version>1.0.0</version>
-
-    <vendor email="dengzii@foxmail.com" url="https://github.com/dengzii">dengzii</vendor>
+    <idea-version since-build="191.8026.42"/>
+    <vendor email="dengzii@foxmail.com" url="https://github.com/dengzii">dengzi</vendor>
 
     <description>
         <![CDATA[
-      Remove ButterKnife annotations and auto replace with findViewById.
-      ]]>
+        Remove ButterKnife binding annotations, generate `bindView` method and `findViewById` codes instead.
+        ]]>
     </description>
 
-    <change-notes>
-        <![CDATA[
-      1.0.0<br>
-      Remove ButterKnife annotations, generate bindView method include findViewById codes.
-      ]]>
-    </change-notes>
-
-
-    <idea-version since-build="173.0"/>
+    <!--    <change-notes></change-notes>-->
 
     <depends>com.intellij.modules.java</depends>
-    <depends>com.intellij.modules.platform</depends>
-
-    <extensions defaultExtensionNs="com.intellij">
-
-    </extensions>
+    <depends>org.jetbrains.kotlin</depends>
 
     <actions>
-
-        <action id="com.dengzii.plugin.rbk.action.main"
-                class="com.dengzii.plugin.rbk.MainAction"
-                text="Remove ButterKnife"
-                description="Remove ButterKnife annotations in this class and generate binding view id code.">
-            <add-to-group group-id="ToolsMenu" anchor="last"/>
-            <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt 2"/>
+        <action id="com.dengzii.plugn.rbk.main" class="com.dengzii.plugin.rbk.MainAction"
+                text="Remove ButterKnife" description="Remove ButterKnife and generate findViewById">
+            <add-to-group group-id="RefactoringMenu" anchor="last"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt 1"/>
         </action>
     </actions>
 
