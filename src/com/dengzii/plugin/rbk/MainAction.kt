@@ -1,7 +1,7 @@
 package com.dengzii.plugin.rbk
 
 import com.dengzii.plugin.rbk.gen.FindViewCodeWriter
-import com.dengzii.plugin.rbk.ui.ViewIdMappingDialog
+
 import com.dengzii.plugin.rbk.utils.PsiFileUtils
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -25,19 +25,6 @@ class MainAction : AnAction() {
         }
         val bindInfo = PsiFileUtils.getButterKnifeViewBindInfo(psiFile!!)
         WriteCommandAction.writeCommandAction(project).run(FindViewCodeWriter(psiFile, bindInfo))
-        if (true) {
-            return
-        }
-
-        val viewInfo = PsiFileUtils.getViewInfoFromPsiFile(psiFile, project)
-        val viewIdMappingDialog = ViewIdMappingDialog(project, viewInfo)
-        if (viewIdMappingDialog.showAndGet()) {
-            val viewInfos = viewIdMappingDialog.result
-            if (viewInfos.isEmpty()) {
-                return
-            }
-            WriteCommandAction.writeCommandAction(project).run(FindViewCodeWriter(psiFile, viewInfos))
-        }
     }
 
     override fun update(e: AnActionEvent) {

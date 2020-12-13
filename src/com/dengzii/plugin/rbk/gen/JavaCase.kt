@@ -2,9 +2,7 @@ package com.dengzii.plugin.rbk.gen
 
 import com.dengzii.plugin.rbk.BindInfo
 import com.dengzii.plugin.rbk.Config
-import com.dengzii.plugin.rbk.utils.PsiClassUtils.getMethod
 import com.intellij.psi.*
-import java.util.*
 
 /**
  *
@@ -21,19 +19,19 @@ class JavaCase : BaseCase() {
             return
         }
         val factory = JavaPsiFacade.getElementFactory(psiElement.project)
-        val psiClass = getPsiClass(psiElement)
-        if (Objects.isNull(psiClass)) {
-            return
-        }
+        val psiClass = getPsiClass(psiElement) ?: return
         val initViewMethod = genInitViewMethod(factory, psiClass)
-        val allFields = psiClass!!.allFields.map { it.name }
+        val allFields = psiClass.allFields.map { it.name }
+
         for (viewInfo in bindInfos) {
             if (!viewInfo.enable) continue
-            if (!allFields.contains(viewInfo.fileName)) {
+            if (viewInfo.fileName !in allFields) {
                 psiClass.add(genViewDeclareField(factory, viewInfo))
             }
-            if (!Objects.isNull(initViewMethod!!.body)) {
-                initViewMethod.body!!.add(genFindViewStatement(factory, viewInfo))
+            if (initViewMethod.body != null) {
+                val findViewStatement = genFindViewStatement(factory, viewInfo)
+                initViewMethod.body?.add(factory.createStatementFromText("int a = 1;", null))
+                initViewMethod.body!!.add(findViewStatement)
             }
         }
     }
@@ -53,14 +51,17 @@ class JavaCase : BaseCase() {
         return factory.createFieldFromText(statement, null)
     }
 
-    private fun genInitViewMethod(factory: PsiElementFactory, psiClass: PsiClass?): PsiMethod? {
-        var method1 = getMethod(psiClass!!, Config.METHOD_INIT_VIEW)
-        if (Objects.isNull(method1)) {
-            method1 = factory.createMethod(Config.METHOD_INIT_VIEW, PsiType.VOID)
-            psiClass.add(method1)
+    private fun genInitViewMethod(factory: PsiElementFactory, psiClass: PsiClass): PsiMethod {
+        var initViewMethod: PsiMethod? = psiClass.findMethodsByName(Config.METHOD_INIT_VIEW, false).firstOrNull()
+        if (initViewMethod == null) {
+            initViewMethod = factory.createMethod(Config.METHOD_INIT_VIEW, PsiType.VOID)
+            initViewMethod.modifierList.setModifierProperty(PsiModifier.PRIVATE, true)
+            psiClass.add(initViewMethod)
+            psiClass.findMethodsByName(Config.METHOD_INIT_VIEW, false).firstOrNull()?.let {
+                initViewMethod = it
+            }
         }
-        method1!!.modifierList.setModifierProperty(PsiModifier.PRIVATE, true)
-        return method1
+        return initViewMethod as PsiMethod
     }
 
     private fun genFindViewStatement(factory: PsiElementFactory, bindInfo: BindInfo): PsiStatement {

@@ -22,7 +22,7 @@ object PsiFileUtils {
     private const val ANDROID_ID_PREFIX = "@+id/"
 
     private val butterKnifeBindAnnotation = arrayOf(
-            "BindView"
+            "butterknife.BindView"
     )
     private const val butterKnifeOptionalAnnotation = "Optional"
 
