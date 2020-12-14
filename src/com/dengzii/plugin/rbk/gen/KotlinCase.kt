@@ -1,7 +1,7 @@
 package com.dengzii.plugin.rbk.gen
 
-import com.dengzii.plugin.rbk.Config
 import com.dengzii.plugin.rbk.BindInfo
+import com.dengzii.plugin.rbk.Config
 import com.dengzii.plugin.rbk.utils.KtPsiUtils.getFirstFun
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
@@ -16,9 +16,6 @@ import java.util.*
  */
 class KotlinCase : BaseCase() {
 
-    private val mFieldPlace = InsertPlace.FIRST
-    private val mMethodPlace = InsertPlace.FIRST
-
     companion object {
         private const val STATEMENT_LAZY_INIT_VIEW = " %s val %s by lazy  { findViwById<%s>(%s) }"
         private const val FUN_INIT_VIEW = "private fun %s() {\n\n}"
@@ -27,22 +24,19 @@ class KotlinCase : BaseCase() {
     }
 
     override fun dispose(psiElement: PsiFile, bindInfos: List<BindInfo>) {
-        if (!psiElement.language.`is`(Config.KOTLIN)) {
+        if (!psiElement.language.`is`(Config.LangeKotlin)) {
             next(psiElement, bindInfos)
             return
         }
-        val ktClass = getKtClass(psiElement)
-        if (Objects.isNull(ktClass)) {
-            return
-        }
+        val ktClass = getKtClass(psiElement) ?: return
         val ktPsiFactory = KtPsiFactory(psiElement.project)
         checkAndCreateClassBody(ktClass, ktPsiFactory)
         if (!INIT_VIEW_BY_LAZY) {
             insertInitViewKtFun(ktClass, ktPsiFactory)
         }
-        val properties = ktClass!!.getProperties().map { it.name }
+        val properties = ktClass.getProperties().map { it.name }
         for (viewInfo in bindInfos) {
-            if (properties.contains(viewInfo.fileName)){
+            if (properties.contains(viewInfo.filedName)) {
                 continue
             }
             insertViewField(viewInfo, ktPsiFactory, ktClass)
@@ -54,8 +48,8 @@ class KotlinCase : BaseCase() {
         val lBrace = body!!.lBrace
         val lazyViewProperty = String.format(STATEMENT_LAZY_INIT_VIEW,
                 MODIFIER_INIT_VIEW_PROPERTY,
-                bindInfo.fileName,
-                bindInfo.type,
+                bindInfo.filedName,
+                bindInfo.viewClass,
                 bindInfo.idResExpr)
         val ktProperty = ktPsiFactory.createProperty(lazyViewProperty)
         body.addAfter(ktProperty, lBrace)
@@ -65,7 +59,7 @@ class KotlinCase : BaseCase() {
         val firstFun: PsiElement? = getFirstFun(ktClass!!)
         val ktClassBody = ktClass.body
         val rBrace = ktClassBody!!.rBrace
-        val initViewFun: KtFunction = factory.createFunction(String.format(FUN_INIT_VIEW, Config.METHOD_INIT_VIEW))
+        val initViewFun: KtFunction = factory.createFunction(String.format(FUN_INIT_VIEW, Config.methodNameBindView))
         ktClassBody.addBefore(initViewFun, if (Objects.isNull(firstFun)) rBrace else firstFun)
     }
 

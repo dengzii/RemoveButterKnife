@@ -21,6 +21,7 @@ object PsiFileUtils {
     private const val ANDROID_ID_ATTR_NAME = "android:id"
     private const val ANDROID_ID_PREFIX = "@+id/"
 
+    @Suppress("SpellCheckingInspection")
     private val butterKnifeBindAnnotation = arrayOf(
             "butterknife.BindView"
     )
@@ -63,10 +64,10 @@ object PsiFileUtils {
                 val viewIdExpr = (parameter[0].detachedValue as? PsiReferenceExpressionImpl)?.element
                 viewIdExpr?.let {
                     ret.add(BindInfo(
-                            type = field.type.canonicalText,
+                            viewClass = field.type.canonicalText,
                             idResExpr = it.text,
-                            fileName = field.name,
-                            optional = optional
+                            filedName = field.name,
+                            bindAnnotation = annotation
                     ))
                 }
                 break
@@ -115,7 +116,8 @@ object PsiFileUtils {
                     if (id != null) {
                         val viewInfo = BindInfo(
                                 if (type.contains(".")) type.substring(type.lastIndexOf(".") + 1) else type,
-                                id.replace(ANDROID_ID_PREFIX, "")
+                                id.replace(ANDROID_ID_PREFIX, ""),
+                                bindAnnotation = null
                         )
                         viewInfo.genMappingField()
                         result.add(viewInfo)

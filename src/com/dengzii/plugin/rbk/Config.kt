@@ -8,8 +8,15 @@ import com.intellij.lang.Language
  */
 object Config {
 
-    val JAVA = Language.findLanguageByID("JAVA")
-    val KOTLIN = Language.findLanguageByID("kotlin")
-    var METHOD_INIT_VIEW = "initView"
-    var FIELD_NAME_PREFIX = "m"
+    val LangeJava = Language.findLanguageByID("JAVA")
+    val LangeKotlin = Language.findLanguageByID("kotlin")
+    var methodNameBindView = "bindView"
+    var fieldNamePrefix = "m"
+    var addPrivateModifier = true
+
+    var bindViewMethodInvoker = mutableListOf("onCreate", "onCreateView")
+
+    var bindViewMethodInvokerFirstLine = true
+
+    var formatCode = true
 }

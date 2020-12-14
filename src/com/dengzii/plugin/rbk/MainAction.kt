@@ -1,12 +1,10 @@
 package com.dengzii.plugin.rbk
 
 import com.dengzii.plugin.rbk.gen.FindViewCodeWriter
-
 import com.dengzii.plugin.rbk.utils.PsiFileUtils
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
-import com.intellij.openapi.command.WriteCommandAction
 
 /**
  *
@@ -24,7 +22,10 @@ class MainAction : AnAction() {
             return
         }
         val bindInfo = PsiFileUtils.getButterKnifeViewBindInfo(psiFile!!)
-        WriteCommandAction.writeCommandAction(project).run(FindViewCodeWriter(psiFile, bindInfo))
+        if (bindInfo.isEmpty()) {
+            return
+        }
+        FindViewCodeWriter.run(psiFile, bindInfo)
     }
 
     override fun update(e: AnActionEvent) {
@@ -38,7 +39,7 @@ class MainAction : AnAction() {
             return
         }
         val language = psiFile!!.language
-        if (!language.`is`(Config.JAVA) && !language.`is`(Config.KOTLIN)) {
+        if (!language.`is`(Config.LangeJava) && !language.`is`(Config.LangeKotlin)) {
             e.presentation.isEnabledAndVisible = false
         }
     }

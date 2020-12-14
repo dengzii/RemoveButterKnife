@@ -1,19 +1,23 @@
 package com.dengzii.plugin.rbk
 
+import com.intellij.psi.PsiAnnotation
+
 /**
  *
  * @author https://github.com/dengzii
  */
 class BindInfo(
-        val type: String,
+        val viewClass: String,
         val idResExpr: String,
-        var fileName: String? = null,
+        var filedName: String? = null,
         var enable: Boolean = true,
-        var optional: Boolean = false
+        var optional: Boolean = false,
+        var bindAnnotation: PsiAnnotation? = null,
+        var refactorSuccess: Boolean = false
 ) {
 
     fun genMappingField() {
-        val builder = StringBuilder(Config.FIELD_NAME_PREFIX)
+        val builder = StringBuilder(Config.fieldNamePrefix)
         if (idResExpr.contains("_")) {
             val split = idResExpr.toLowerCase().split("_".toRegex()).toTypedArray()
             for (s in split) {
@@ -26,6 +30,6 @@ class BindInfo(
             val c = idResExpr.substring(0, 1).toUpperCase()
             builder.append(c).append(idResExpr.substring(1))
         }
-        fileName = builder.toString()
+        filedName = builder.toString()
     }
 }

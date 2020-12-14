@@ -2,7 +2,10 @@ package com.dengzii.plugin.rbk.gen
 
 import com.dengzii.plugin.rbk.BindInfo
 import com.dengzii.plugin.rbk.Config
+import com.intellij.lang.Language
 import com.intellij.psi.*
+import com.intellij.psi.codeStyle.CodeStyleSettings
+import com.intellij.psi.impl.source.codeStyle.CodeFormatterFacade
 
 /**
  *
@@ -10,30 +13,73 @@ import com.intellij.psi.*
  */
 class JavaCase : BaseCase() {
 
-    //    private static final InsertPlace mFieldInsertPlace = InsertPlace.FIRST; // TODO: 2019/9/30 add insert place support
-    //    private static final InsertPlace mFindViewInsertPlace = InsertPlace.FIRST; // TODO: 2019/9/30
-
     override fun dispose(psiElement: PsiFile, bindInfos: List<BindInfo>) {
-        if (!psiElement.language.`is`(Config.JAVA)) {
+        if (!psiElement.language.`is`(Config.LangeJava)) {
             next(psiElement, bindInfos)
             return
         }
         val factory = JavaPsiFacade.getElementFactory(psiElement.project)
-        val psiClass = getPsiClass(psiElement) ?: return
-        val initViewMethod = genInitViewMethod(factory, psiClass)
-        val allFields = psiClass.allFields.map { it.name }
+        val psiClass = getPsiClass(psiElement)
 
-        for (viewInfo in bindInfos) {
-            if (!viewInfo.enable) continue
-            if (viewInfo.fileName !in allFields) {
-                psiClass.add(genViewDeclareField(factory, viewInfo))
-            }
-            if (initViewMethod.body != null) {
-                val findViewStatement = genFindViewStatement(factory, viewInfo)
-                initViewMethod.body?.add(factory.createStatementFromText("int a = 1;", null))
-                initViewMethod.body!!.add(findViewStatement)
-            }
+        if (psiClass == null) {
+            println("No class found.")
+            // TODO notify not class found.
+            return
         }
+
+        // generate bind view id method
+        val bindViewMethod = genInitViewMethod(factory, psiClass)
+        // add bind view statement to method body
+        for (viewInfo in bindInfos) {
+            if (!viewInfo.enable) {
+                continue
+            }
+            genViewDeclareField(factory, viewInfo, psiClass)
+
+            val methodBody = bindViewMethod.body
+            if (methodBody == null) {
+                viewInfo.refactorSuccess = false
+                return
+            }
+            val findViewStatement = genFindViewStatement(factory, viewInfo)
+            methodBody.add(findViewStatement)
+            viewInfo.bindAnnotation?.delete()
+        }
+        // insert invoke bind view method to method.
+        for (methodName in Config.bindViewMethodInvoker) {
+            val invoker = psiClass.findMethodsByName(methodName, false).firstOrNull() ?: continue
+            val body = invoker.body ?: continue
+
+            // default insert to the end of method
+            var callSuper: PsiElement? = body.lastBodyElement
+
+            body.acceptChildren(object : PsiElementVisitor() {
+                override fun visitElement(element: PsiElement) {
+                    super.visitElement(element)
+                    if (element is PsiExpressionStatement) {
+                        val expr = element.expression as? PsiMethodCallExpression ?: return
+                        // after supper.onCreate()
+                        if (expr.text == "super.onCreate()") {
+                            callSuper = element
+                        }
+                        // after setContentView
+                        if (expr.resolveMethod()?.name == "setContentView") {
+                            callSuper = element
+                        }
+                        // after inflater
+                        if (expr.resolveMethod()?.name == "inflate") {
+                            callSuper = element
+                        }
+                    }
+                }
+            })
+            body.addAfter(factory.createStatementFromText("${Config.methodNameBindView}();\n", null), callSuper)
+            break
+        }
+    }
+
+    private fun insertInvokeBindViewMethodStatement() {
+
     }
 
     private fun getPsiClass(file: PsiFile): PsiClass? {
@@ -46,31 +92,49 @@ class JavaCase : BaseCase() {
         return null
     }
 
-    private fun genViewDeclareField(factory: PsiElementFactory, bindInfo: BindInfo): PsiField {
-        val statement = String.format(STATEMENT_FIELD, bindInfo.type, bindInfo.fileName)
-        return factory.createFieldFromText(statement, null)
+    private fun genViewDeclareField(factory: PsiElementFactory, bindInfo: BindInfo, psiClass: PsiClass): PsiField {
+        var psiField = psiClass.findFieldByName(bindInfo.filedName, false)
+        if (psiField == null) {
+            val statement = String.format(statementField, bindInfo.viewClass, bindInfo.filedName)
+            psiField = factory.createFieldFromText(statement, null)
+        } else {
+            if (Config.addPrivateModifier) {
+                psiField.modifierList?.setModifierProperty(PsiModifier.PRIVATE, true)
+            }
+        }
+        if (Config.formatCode) {
+            psiField.acceptChildren(object : PsiElementVisitor() {
+                override fun visitWhiteSpace(space: PsiWhiteSpace) {
+                    super.visitWhiteSpace(space)
+                    if (space.text == "\n") {
+                        space.delete()
+                    }
+                }
+            })
+//            psiField = codeFormatter.processElement(psiField.node).getPsi(PsiField::class.java)
+        }
+        return psiField
     }
 
     private fun genInitViewMethod(factory: PsiElementFactory, psiClass: PsiClass): PsiMethod {
-        var initViewMethod: PsiMethod? = psiClass.findMethodsByName(Config.METHOD_INIT_VIEW, false).firstOrNull()
+        var initViewMethod: PsiMethod? = psiClass.findMethodsByName(Config.methodNameBindView, false).firstOrNull()
         if (initViewMethod == null) {
-            initViewMethod = factory.createMethod(Config.METHOD_INIT_VIEW, PsiType.VOID)
+            initViewMethod = factory.createMethod(Config.methodNameBindView, PsiType.VOID)
             initViewMethod.modifierList.setModifierProperty(PsiModifier.PRIVATE, true)
-            psiClass.add(initViewMethod)
-            psiClass.findMethodsByName(Config.METHOD_INIT_VIEW, false).firstOrNull()?.let {
-                initViewMethod = it
-            }
+            initViewMethod = psiClass.add(initViewMethod) as PsiMethod
         }
-        return initViewMethod as PsiMethod
+        return initViewMethod
     }
 
     private fun genFindViewStatement(factory: PsiElementFactory, bindInfo: BindInfo): PsiStatement {
-        val findStatement = String.format(STATEMENT_FIND_VIEW, bindInfo.fileName, bindInfo.idResExpr)
+        val findStatement = String.format(statementFindView, bindInfo.filedName, bindInfo.idResExpr)
         return factory.createStatementFromText(findStatement, null)
     }
 
     companion object {
-        private const val STATEMENT_FIELD = "private %s %s;"
-        private const val STATEMENT_FIND_VIEW = "%s = findViewById(%s);\n"
+        private const val statementField = "private %s %s;"
+        private const val statementFindView = "%s = findViewById(%s);\n"
+        private val codeFormatter = CodeFormatterFacade(CodeStyleSettings.getDefaults(),
+                Language.findLanguageByID("JAVA"), false)
     }
 }
