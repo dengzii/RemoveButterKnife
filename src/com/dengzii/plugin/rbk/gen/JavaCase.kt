@@ -3,6 +3,7 @@ package com.dengzii.plugin.rbk.gen
 import com.dengzii.plugin.rbk.BindInfo
 import com.dengzii.plugin.rbk.Config
 import com.dengzii.plugin.rbk.Constants
+import com.dengzii.plugin.rbk.gen.insertion.MethodCallStatementInsertion
 import com.intellij.lang.Language
 import com.intellij.psi.*
 import com.intellij.psi.codeStyle.CodeStyleSettings
@@ -47,9 +48,11 @@ class JavaCase : BaseCase() {
             viewInfo.bindAnnotation?.delete()
         }
 
-        psiClass.acceptChildren(object : PsiElementVisitor() {
 
-        })
+        psiClass.allMethods.forEach {
+            it.body ?: return@forEach
+            MethodCallStatementInsertion().insert(it.body!!, bindViewMethod)
+        }
 
         var superClass = psiClass.superClass
         while (superClass != null) {
