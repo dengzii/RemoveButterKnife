@@ -1,6 +1,6 @@
 package com.dengzii.plugin.rbk
 
-import com.dengzii.plugin.rbk.gen.FindViewCodeWriter
+import com.dengzii.plugin.rbk.gen.CodeWriter
 import com.dengzii.plugin.rbk.utils.PsiFileUtils
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -25,7 +25,7 @@ class MainAction : AnAction() {
         if (bindInfo.isEmpty()) {
             return
         }
-        FindViewCodeWriter.run(psiFile, bindInfo)
+        CodeWriter.run(psiFile, bindInfo)
     }
 
     override fun update(e: AnActionEvent) {

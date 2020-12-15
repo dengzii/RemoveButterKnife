@@ -2,6 +2,7 @@ package com.dengzii.plugin.rbk.gen
 
 import com.dengzii.plugin.rbk.BindInfo
 import com.dengzii.plugin.rbk.Config
+import com.dengzii.plugin.rbk.Constants
 import com.intellij.lang.Language
 import com.intellij.psi.*
 import com.intellij.psi.codeStyle.CodeStyleSettings
@@ -45,7 +46,36 @@ class JavaCase : BaseCase() {
             methodBody.add(findViewStatement)
             viewInfo.bindAnnotation?.delete()
         }
+
+        psiClass.acceptChildren(object : PsiElementVisitor() {
+
+        })
+
+        var superClass = psiClass.superClass
+        while (superClass != null) {
+            when (superClass.qualifiedName) {
+                "android.app.Dialog" -> {
+
+                }
+                "android.app.Activity" -> {
+
+                }
+                "android.view.View" -> {
+
+                }
+                else -> {
+
+                }
+            }
+            superClass = superClass.superClass
+        }
+
         // insert invoke bind view method to method.
+        insertInvokeBindViewMethodStatement(psiClass, factory)
+    }
+
+    private fun insertInvokeBindViewMethodStatement(psiClass: PsiClass, factory: PsiElementFactory) {
+
         for (methodName in Config.bindViewMethodInvoker) {
             val invoker = psiClass.findMethodsByName(methodName, false).firstOrNull() ?: continue
             val body = invoker.body ?: continue
@@ -78,8 +108,35 @@ class JavaCase : BaseCase() {
         }
     }
 
-    private fun insertInvokeBindViewMethodStatement() {
-
+    /**
+     * Search ButterKnife bind statement in each class method.
+     *
+     * @param psiClass the class.
+     * @return the ButterKnife bind statement.
+     */
+    private fun findButterKnifeBindStatement(psiClass: PsiClass): PsiExpressionStatement? {
+        var butterKnifeBindStatement: PsiExpressionStatement? = null
+        var foundFlag = false
+        psiClass.allMethods.forEach {
+            it.body?.acceptChildren(object : PsiElementVisitor() {
+                override fun visitElement(element: PsiElement) {
+                    super.visitElement(element)
+                    if (foundFlag) {
+                        return
+                    }
+                    if (element is PsiExpressionStatement && element.expression is PsiMethodCallExpression) {
+                        val methodCallExpression = element.expression as PsiMethodCallExpression
+                        val methodClassFullName = methodCallExpression.resolveMethod()?.containingClass?.qualifiedName
+                        if (methodClassFullName != Constants.CLASS_BUTTTER_KNIFE) {
+                            return
+                        }
+                        butterKnifeBindStatement = element
+                        foundFlag = true
+                    }
+                }
+            })
+        }
+        return butterKnifeBindStatement
     }
 
     private fun getPsiClass(file: PsiFile): PsiClass? {

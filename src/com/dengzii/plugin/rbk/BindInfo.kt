@@ -1,6 +1,7 @@
 package com.dengzii.plugin.rbk
 
 import com.intellij.psi.PsiAnnotation
+import com.intellij.psi.PsiReference
 
 /**
  *
@@ -12,9 +13,11 @@ class BindInfo(
         var filedName: String? = null,
         var enable: Boolean = true,
         var optional: Boolean = false,
-        var bindAnnotation: PsiAnnotation? = null,
-        var refactorSuccess: Boolean = false
+        var bindAnnotation: PsiAnnotation? = null
 ) {
+
+    var refactorSuccess: Boolean = false
+    var bindView: PsiReference? = null
 
     fun genMappingField() {
         val builder = StringBuilder(Config.fieldNamePrefix)

@@ -8,6 +8,8 @@ import com.intellij.lang.Language
  */
 object Config {
 
+
+
     val LangeJava = Language.findLanguageByID("JAVA")
     val LangeKotlin = Language.findLanguageByID("kotlin")
     var methodNameBindView = "bindView"

@@ -9,7 +9,7 @@ import com.intellij.util.ThrowableRunnable
  *
  * @author https://github.com/dengzii
  */
-class FindViewCodeWriter private constructor(
+class CodeWriter private constructor(
         private val psiFile: PsiFile,
         private val bindInfos: List<BindInfo>
 ) : ThrowableRunnable<RuntimeException?> {
@@ -17,7 +17,7 @@ class FindViewCodeWriter private constructor(
     companion object {
         fun run(psiFile: PsiFile, bindInfos: List<BindInfo>) {
             WriteCommandAction.writeCommandAction(psiFile.project)
-                    .run(FindViewCodeWriter(psiFile, bindInfos))
+                    .run(CodeWriter(psiFile, bindInfos))
         }
     }
 
