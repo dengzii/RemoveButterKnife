@@ -27,22 +27,7 @@ object PsiFileUtils {
     )
     private const val butterKnifeOptionalAnnotation = "Optional"
 
-    fun getButterKnifeViewBindInfo(psiFile: PsiFile): List<BindInfo> {
-        val ret = mutableListOf<BindInfo>()
-        var firstFlag = true
-        psiFile.acceptChildren(object : PsiElementVisitor() {
-            override fun visitElement(element: PsiElement) {
-                super.visitElement(element)
-                if (element is PsiClass && firstFlag) {
-                    ret.addAll(visitPsiJavaClass(element))
-                    firstFlag = false
-                }
-            }
-        })
-        return ret
-    }
-
-    private fun visitPsiJavaClass(psiClass: PsiClass): MutableList<BindInfo> {
+    fun getButterKnifeViewBindInfo(psiClass: PsiClass): List<BindInfo> {
         val ret = mutableListOf<BindInfo>()
 
         for (field in psiClass.allFields) {
@@ -73,7 +58,6 @@ object PsiFileUtils {
                 break
             }
         }
-
         return ret
     }
 

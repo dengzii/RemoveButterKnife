@@ -3,6 +3,7 @@ package com.dengzii.plugin.rbk.gen
 import com.dengzii.plugin.rbk.BindInfo
 import com.dengzii.plugin.rbk.Config
 import com.dengzii.plugin.rbk.utils.KtPsiUtils.getFirstFun
+import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import org.jetbrains.kotlin.psi.KtClass
@@ -23,13 +24,13 @@ class KotlinCase : BaseCase() {
         private const val INIT_VIEW_BY_LAZY = true
     }
 
-    override fun dispose(psiElement: PsiFile, bindInfos: List<BindInfo>) {
-        if (!psiElement.language.`is`(Config.LangeKotlin)) {
-            next(psiElement, bindInfos)
+    override fun dispose(psiClass: PsiClass, bindInfos: List<BindInfo>) {
+        if (!psiClass.language.`is`(Config.LangeKotlin)) {
+            next(psiClass, bindInfos)
             return
         }
-        val ktClass = getKtClass(psiElement) ?: return
-        val ktPsiFactory = KtPsiFactory(psiElement.project)
+        val ktClass = getKtClass(psiClass) ?: return
+        val ktPsiFactory = KtPsiFactory(psiClass.project)
         checkAndCreateClassBody(ktClass, ktPsiFactory)
         if (!INIT_VIEW_BY_LAZY) {
             insertInitViewKtFun(ktClass, ktPsiFactory)
@@ -69,9 +70,8 @@ class KotlinCase : BaseCase() {
         }
     }
 
-    private fun getKtClass(file: PsiFile): KtClass? {
-        val psiElements = file.children
-        for (element in psiElements) {
+    private fun getKtClass(psiClass: PsiClass): KtClass? {
+        for (element in psiClass.children) {
             if (element is KtClass) {
                 return element
             }

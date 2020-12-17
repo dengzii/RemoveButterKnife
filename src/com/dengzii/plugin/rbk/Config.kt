@@ -8,8 +8,6 @@ import com.intellij.lang.Language
  */
 object Config {
 
-
-
     val LangeJava = Language.findLanguageByID("JAVA")
     val LangeKotlin = Language.findLanguageByID("kotlin")
     var methodNameBindView = "bindView"
@@ -17,6 +15,8 @@ object Config {
     var addPrivateModifier = true
 
     var bindViewMethodInvoker = mutableListOf("onCreate", "onCreateView")
+
+    var insertCallBindViewMethodAfterMethod = mutableListOf("setContentView", "inflate")
 
     var bindViewMethodInvokerFirstLine = true
 
