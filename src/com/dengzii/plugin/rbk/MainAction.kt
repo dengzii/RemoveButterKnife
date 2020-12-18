@@ -22,6 +22,8 @@ class MainAction : AnAction() {
         if (isNull(project, psiFile, editor)) {
             return
         }
+        Config.PsiTypes.init(project!!)
+
         val psiClass = psiFile!!.getDeclaredClass().firstOrNull() ?: return
         val bindInfo = PsiFileUtils.getButterKnifeViewBindInfo(psiClass)
         if (bindInfo.isEmpty()) {

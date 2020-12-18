@@ -4,13 +4,14 @@ import com.dengzii.plugin.rbk.BindInfo
 import com.dengzii.plugin.rbk.Config
 import com.dengzii.plugin.rbk.Constants
 import com.dengzii.plugin.rbk.utils.acceptElement
+import com.dengzii.plugin.rbk.utils.getParameterExpressions
+import com.dengzii.plugin.rbk.utils.getParameterTypes
 import com.intellij.lang.Language
 import com.intellij.psi.*
 import com.intellij.psi.codeStyle.CodeStyleSettings
 import com.intellij.psi.impl.source.codeStyle.CodeFormatterFacade
 import com.intellij.refactoring.extractMethod.newImpl.ExtractMethodHelper.addSiblingAfter
-import org.jetbrains.kotlin.idea.refactoring.getLineNumber
-import java.util.*
+import java.lang.IllegalStateException
 
 /**
  *
@@ -49,58 +50,87 @@ class JavaCase : BaseCase() {
     }
 
     /**
-     * Insert call bind view method statement to specified method in [Config.bindViewMethodInvoker].
+     * Insert call bind view method statement to specified method in [Config.insertBindViewMethodIntoMethod].
      * Search method name in class in order of list, the call statement will insert into first name matched method,
      * if none method call statement matched, the end of method will be insert.
      *
      * The insert place determine by [-]
      */
-    private fun insertInvokeBindViewMethodStatement(psiClass: PsiClass, factory: PsiElementFactory): Array<PsiExpression>? {
+    @Throws(NoSuchMethodException::class, IllegalStateException::class)
+    private fun insertInvokeBindViewMethodStatement(psiClass: PsiClass, factory: PsiElementFactory): Array<PsiParameter>? {
 
-        var bindViewMethodParameterList: Array<PsiExpression>? = null
-        val insertAfterMethod = Config.insertCallBindViewMethodAfterMethod
+        var bindViewMethodParameterList: Array<PsiParameter>? = null
+        val insertAfterMethod = Config.insertCallBindViewMethodAfterCallMethod
+        val insertToMethod = Config.insertBindViewMethodIntoMethod
+        val bindViewMethodName = Config.methodNameBindView
 
-        for (methodName in Config.bindViewMethodInvoker) {
-            // find statement insertion target method in class.
-            val invokerMethod = psiClass.findMethodsByName(methodName, false).firstOrNull() ?: continue
-            val methodBody = invokerMethod.body ?: continue
+        var invokerMethodBody: PsiCodeBlock? = null
+        // find statement insertion target method in class.
+        for (m in insertToMethod) {
+            invokerMethodBody = psiClass.findMethodsByName(m, false).firstOrNull()?.body ?: continue
+        }
+        invokerMethodBody
+                ?: throw NoSuchMethodError("Method $insertToMethod not found in class ${psiClass.qualifiedName}.")
 
-            val callStatement = factory.createStatementFromText("${Config.methodNameBindView}();\n", null)
+        var callStatement = factory.createStatementFromText("${bindViewMethodName}();\n", null)
 
-            val methodExpressionMap = mutableMapOf<String, MutableList<PsiMethodCallExpression>>()
-            methodBody.acceptElement { element ->
-                if (element is PsiExpressionStatement) {
-                    val expr = element.expression as? PsiMethodCallExpression ?: return@acceptElement
-                    val m = expr.resolveMethod() ?: return@acceptElement
-                    val expressions = methodExpressionMap.getOrPut(m.name) { mutableListOf() }
-                    expressions.add(expr)
+        val methodExpressionMap = mutableMapOf<String, MutableList<PsiMethodCallExpression>>()
+        invokerMethodBody.acceptElement { element ->
+            if (element is PsiExpressionStatement) {
+                val expr = element.expression as? PsiMethodCallExpression ?: return@acceptElement
+                val m = expr.resolveMethod() ?: return@acceptElement
+                val expressions = methodExpressionMap.getOrPut(m.name) { mutableListOf() }
+                expressions.add(expr)
+            }
+        }
+        // already call bind view method
+        if (bindViewMethodName in methodExpressionMap) {
+            val exprText = methodExpressionMap[bindViewMethodName]?.firstOrNull()?.text
+            if (exprText != null) {
+                if (exprText.startsWith("this.${bindViewMethodName}") || exprText.startsWith(bindViewMethodName)) {
+                    return null
                 }
             }
-            var inserted = false
+        }
+        var inserted = false
 
-            // replace bind.
-            methodExpressionMap["bind"]?.forEach {
-                if ("ButterKnife.bind" in it.text) {
-                    bindViewMethodParameterList = it.argumentList.expressions
-                    it.parent.replace(callStatement)
+        // replace ButterKnife bind.
+        val bind = methodExpressionMap["bind"]?.first { "ButterKnife.bind" in it.text }
+        if (bind != null) {
+            val paramExprs = bind.getParameterExpressions()
+            val paramTypes = bind.getParameterTypes()
+            if (paramTypes.isNullOrEmpty() ||
+                    paramTypes.size != paramTypes.size) {
+                throw IllegalStateException("Unexpected parameters size.")
+            }
+            val argSourceIndex = paramTypes.size - 1
+            val sourceType = paramTypes[argSourceIndex].type
+            val sourceExpr = paramExprs[argSourceIndex].text
+
+            val source = if (sourceType == Config.PsiTypes.androidView) {
+                sourceExpr
+            } else {
+                "$sourceExpr.getWindow().getDecorView()"
+            }
+            callStatement = factory.createStatementFromText("$bindViewMethodName($source);\n", null)
+            bind.parent.addSiblingAfter(callStatement)
+            bind.parent.delete()
+            bindViewMethodParameterList = paramTypes
+            inserted = true
+        }
+        // if not bind, insert to other statement.
+        if (!inserted) {
+            for (m in insertAfterMethod) {
+                if (methodExpressionMap.containsKey(m)) {
+                    val methodCallExpressions = methodExpressionMap[m]!!.first()
+                    methodCallExpressions.parent.addSiblingAfter(callStatement)
                     inserted = true
                 }
             }
-            // if not bind, insert to other statement.
-            if (!inserted) {
-                for (m in insertAfterMethod) {
-                    if (methodExpressionMap.containsKey(m)) {
-                        val methodCallExpressions = methodExpressionMap[m]!!.first()
-                        methodCallExpressions.parent.addSiblingAfter(callStatement)
-                        inserted = true
-                    }
-                }
-            }
+        }
 
-            if (!inserted) {
-                methodBody.addAfter(callStatement, methodBody.lastBodyElement)
-            }
-            break
+        if (!inserted) {
+            invokerMethodBody.addAfter(callStatement, invokerMethodBody.lastBodyElement)
         }
         return bindViewMethodParameterList
     }
@@ -136,16 +166,6 @@ class JavaCase : BaseCase() {
         return butterKnifeBindStatement
     }
 
-    private fun getPsiClass(file: PsiFile): PsiClass? {
-        val psiElements = file.children
-        for (element in psiElements) {
-            if (element is PsiClass) {
-                return element
-            }
-        }
-        return null
-    }
-
     private fun genViewDeclareField(factory: PsiElementFactory, bindInfo: BindInfo, psiClass: PsiClass): PsiField {
         var psiField = psiClass.findFieldByName(bindInfo.filedName, false)
         if (psiField == null) {
@@ -171,13 +191,14 @@ class JavaCase : BaseCase() {
     }
 
     private fun genInitViewMethod(factory: PsiElementFactory, psiClass: PsiClass): PsiMethod {
-        var initViewMethod: PsiMethod? = psiClass.findMethodsByName(Config.methodNameBindView, false).firstOrNull()
-        if (initViewMethod == null) {
-            initViewMethod = factory.createMethod(Config.methodNameBindView, PsiType.VOID)
-            initViewMethod.modifierList.setModifierProperty(PsiModifier.PRIVATE, true)
-            initViewMethod = psiClass.add(initViewMethod) as PsiMethod
+        var ret: PsiMethod? = psiClass.findMethodsByName(Config.methodNameBindView, false).firstOrNull()
+        if (ret == null) {
+            ret = factory.createMethod(Config.methodNameBindView, PsiType.VOID)
+            ret.modifierList.setModifierProperty(PsiModifier.PRIVATE, true)
+            ret = psiClass.add(ret) as PsiMethod
         }
-        return initViewMethod
+        ret.parameterList.add(factory.createParameter("source", Config.PsiTypes.androidView))
+        return ret
     }
 
     private fun genFindViewStatement(factory: PsiElementFactory, bindInfo: BindInfo): PsiStatement {

@@ -53,3 +53,12 @@ inline fun PsiElement.acceptExpression(crossinline visitor: (PsiElement) -> Unit
         }
     })
 }
+
+fun PsiCallExpression.getParameterTypes(): Array<PsiParameter> {
+    val method = resolveMethod() ?: return arrayOf()
+    return method.parameterList.parameters
+}
+
+fun PsiCallExpression.getParameterExpressions(): Array<PsiExpression> {
+    return argumentList?.expressions ?: arrayOf()
+}
