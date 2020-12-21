@@ -11,7 +11,7 @@ import com.intellij.psi.*
 import com.intellij.psi.codeStyle.CodeStyleSettings
 import com.intellij.psi.impl.source.codeStyle.CodeFormatterFacade
 import com.intellij.refactoring.extractMethod.newImpl.ExtractMethodHelper.addSiblingAfter
-import java.lang.IllegalStateException
+import javax.swing.undo.UndoManager
 
 /**
  *
@@ -28,20 +28,16 @@ class JavaCase : BaseCase() {
 
         // generate bind view id method
         val bindViewMethod = genInitViewMethod(factory, psiClass)
+        val methodBody = bindViewMethod.body ?: return
+
         // add bind view statement to method body
         for (viewInfo in bindInfos) {
             if (!viewInfo.enable) {
                 continue
             }
             genViewDeclareField(factory, viewInfo, psiClass)
-
-            val methodBody = bindViewMethod.body
-            if (methodBody == null) {
-                viewInfo.refactorSuccess = false
-                return
-            }
-            val findViewStatement = genFindViewStatement(factory, viewInfo)
-            methodBody.add(findViewStatement)
+            val bindStatement = genBindStatement(factory, viewInfo, paramNameBindSourceView)
+            methodBody.add(bindStatement)
             viewInfo.bindAnnotation?.delete()
         }
 
@@ -197,18 +193,25 @@ class JavaCase : BaseCase() {
             ret.modifierList.setModifierProperty(PsiModifier.PRIVATE, true)
             ret = psiClass.add(ret) as PsiMethod
         }
-        ret.parameterList.add(factory.createParameter("source", Config.PsiTypes.androidView))
+        val paramBindView = ret.parameterList.parameters.filter {
+            it.name == paramNameBindSourceView
+        }
+        if (paramBindView.isNullOrEmpty()) {
+            ret.parameterList.add(factory.createParameter(paramNameBindSourceView, Config.PsiTypes.androidView))
+        }
         return ret
     }
 
-    private fun genFindViewStatement(factory: PsiElementFactory, bindInfo: BindInfo): PsiStatement {
-        val findStatement = String.format(statementFindView, bindInfo.filedName, bindInfo.idResExpr)
+    private fun genBindStatement(factory: PsiElementFactory, bindInfo: BindInfo, source: String): PsiStatement {
+
+        val findStatement = String.format(statementFindView, bindInfo.filedName, source, bindInfo.idResExpr)
         return factory.createStatementFromText(findStatement, null)
     }
 
     companion object {
+        private const val paramNameBindSourceView = "bindSource"
         private const val statementField = "private %s %s;"
-        private const val statementFindView = "%s = findViewById(%s);\n"
+        private const val statementFindView = "%s = %s.findViewById(%s);\n"
         private val codeFormatter = CodeFormatterFacade(CodeStyleSettings.getDefaults(),
                 Language.findLanguageByID("JAVA"), false)
     }

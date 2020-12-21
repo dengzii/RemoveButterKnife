@@ -1,6 +1,7 @@
 package com.dengzii.plugin.rbk.utils
 
 import com.dengzii.plugin.rbk.BindInfo
+import com.dengzii.plugin.rbk.BindResType
 import com.intellij.openapi.project.Project
 import com.intellij.psi.*
 import com.intellij.psi.impl.source.tree.java.PsiReferenceExpressionImpl
@@ -47,13 +48,19 @@ object PsiFileUtils {
                     continue
                 }
                 val viewIdExpr = (parameter[0].detachedValue as? PsiReferenceExpressionImpl)?.element
+                val resType = annotationTypeName?.replace("butterknife.Bind", "")?.let {
+                    BindResType.valueOf(it)
+                } ?: BindResType.Unknown
                 viewIdExpr?.let {
-                    ret.add(BindInfo(
+                    val info = BindInfo(
                             viewClass = field.type.canonicalText,
                             idResExpr = it.text,
                             filedName = field.name,
-                            bindAnnotation = annotation
-                    ))
+                            bindAnnotation = annotation,
+                            resType = resType
+                    )
+                    info.optional = optional
+                    ret.add(info)
                 }
                 break
             }
@@ -101,7 +108,8 @@ object PsiFileUtils {
                         val viewInfo = BindInfo(
                                 if (type.contains(".")) type.substring(type.lastIndexOf(".") + 1) else type,
                                 id.replace(ANDROID_ID_PREFIX, ""),
-                                bindAnnotation = null
+                                bindAnnotation = null,
+                                resType = BindResType.View
                         )
                         viewInfo.genMappingField()
                         result.add(viewInfo)

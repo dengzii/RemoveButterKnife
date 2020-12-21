@@ -23,6 +23,23 @@ object Config {
 
     var formatCode = true
 
+    var resBindStatement = mapOf(
+            Pair(BindResType.Anim, "getResource().getAnimation(%{resId})"),
+            Pair(BindResType.View, "findViewById(%{resId})"),
+            Pair(BindResType.Array, "getResource().getIntArray(%{resId})"),
+            Pair(BindResType.Bitmap, "getResource().getBitmap(%{resId})"),
+            Pair(BindResType.Bool, "getResource().getBool(%{resId})"),
+            Pair(BindResType.Color, "getResource().getColor(%{resId})"),
+            Pair(BindResType.Dimen, "getResource().getDimen(%{resId})"),
+            Pair(BindResType.Drawable, "getResource().getDrawable(%{resId})"),
+            Pair(BindResType.Float, "getResource().getFloat(%{resId})"),
+            Pair(BindResType.Int, "getResource().getInt(%{resId})"),
+            Pair(BindResType.String, "getResource().getString(%{resId})"),
+            Pair(BindResType.Views, ""),
+            Pair(BindResType.Unknown, "null")
+    )
+
+    //15019472822, 13728669603
     object PsiTypes {
 
         val androidView by lazy { findByName("android.view.View") }
@@ -33,6 +50,7 @@ object Config {
         fun init(project: Project) {
             this.project = project
         }
+
         private fun findByName(name: String, scope: GlobalSearchScope = GlobalSearchScope.allScope(project)): PsiType {
             return PsiType.getTypeByName(name, project, scope)
         }

@@ -11,6 +11,7 @@ class BindInfo(
         val viewClass: String,
         val idResExpr: String,
         var filedName: String? = null,
+        var resType: BindResType,
         var enable: Boolean = true,
         var optional: Boolean = false,
         var bindAnnotation: PsiAnnotation? = null
