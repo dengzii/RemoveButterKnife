@@ -24,22 +24,25 @@ object Config {
     var formatCode = true
 
     var resBindStatement = mapOf(
-            Pair(BindResType.Anim, "getResource().getAnimation(%{resId})"),
-            Pair(BindResType.View, "findViewById(%{resId})"),
-            Pair(BindResType.Array, "getResource().getIntArray(%{resId})"),
-            Pair(BindResType.Bitmap, "getResource().getBitmap(%{resId})"),
-            Pair(BindResType.Bool, "getResource().getBool(%{resId})"),
-            Pair(BindResType.Color, "getResource().getColor(%{resId})"),
-            Pair(BindResType.Dimen, "getResource().getDimen(%{resId})"),
-            Pair(BindResType.Drawable, "getResource().getDrawable(%{resId})"),
-            Pair(BindResType.Float, "getResource().getFloat(%{resId})"),
-            Pair(BindResType.Int, "getResource().getInt(%{resId})"),
-            Pair(BindResType.String, "getResource().getString(%{resId})"),
-            Pair(BindResType.Views, ""),
-            Pair(BindResType.Unknown, "null")
+            Pair(BindType.Anim, "%{SOURCE}.getResource().getAnimation(%{RES_ID})"),
+            // Pair(BindType.Array, "%{SOURCE}.getResource().getIntArray(%{RES_ID})"),
+            Pair(BindType.Bool, "%{SOURCE}.getResource().getBool(%{RES_ID})"),
+            Pair(BindType.Color, "%{SOURCE}.getResource().getColor(%{RES_ID}, %{THEME})"),
+            Pair(BindType.Dimen, "%{SOURCE}.getResource().getDimen(%{RES_ID})"),
+            Pair(BindType.Drawable, "%{SOURCE}.getResource().getDrawable(%{RES_ID}, %{THEME})"),
+            Pair(BindType.Float, "%{SOURCE}.getResource().getFloat(%{RES_ID})"),
+            Pair(BindType.Int, "%{SOURCE}.getResource().getInt(%{RES_ID})"),
+            Pair(BindType.String, "%{SOURCE}.getResource().getString(%{RES_ID})"),
+            Pair(BindType.View, "%{SOURCE}.findViewById(%{RES_ID})"),
+            Pair(BindType.Unknown, "")
     )
 
-    //15019472822, 13728669603
+    var onClickListenerStatement = """
+            %{VIEW}.setOnClickListener(v -> {
+                %{EVENT_METHOD}(v);
+            });
+    """.trimIndent()
+
     object PsiTypes {
 
         val androidView by lazy { findByName("android.view.View") }

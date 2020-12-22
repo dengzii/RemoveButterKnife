@@ -34,6 +34,12 @@ fun PsiClass.isExtendsFrom(qualifiedClassName: String): Boolean {
     return ret
 }
 
+fun PsiCodeBlock.addLast(element: PsiElement){
+    addAfter(element, lastBodyElement)
+}
+
+
+
 inline fun PsiElement.acceptElement(crossinline visitor: (PsiElement) -> Unit) {
     acceptChildren(object : PsiElementVisitor() {
         override fun visitElement(element: PsiElement) {

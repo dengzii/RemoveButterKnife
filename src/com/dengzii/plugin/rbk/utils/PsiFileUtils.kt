@@ -1,7 +1,8 @@
 package com.dengzii.plugin.rbk.utils
 
 import com.dengzii.plugin.rbk.BindInfo
-import com.dengzii.plugin.rbk.BindResType
+import com.dengzii.plugin.rbk.BindType
+import com.dengzii.plugin.rbk.Constants
 import com.intellij.openapi.project.Project
 import com.intellij.psi.*
 import com.intellij.psi.impl.source.tree.java.PsiReferenceExpressionImpl
@@ -22,25 +23,25 @@ object PsiFileUtils {
     private const val ANDROID_ID_ATTR_NAME = "android:id"
     private const val ANDROID_ID_PREFIX = "@+id/"
 
-    @Suppress("SpellCheckingInspection")
-    private val butterKnifeBindAnnotation = arrayOf(
-            "butterknife.BindView"
-    )
-    private const val butterKnifeOptionalAnnotation = "Optional"
-
     fun getButterKnifeViewBindInfo(psiClass: PsiClass): List<BindInfo> {
         val ret = mutableListOf<BindInfo>()
 
-        for (field in psiClass.allFields) {
+        val fields = psiClass.fields.filter {
+            it.modifierList.let { modifier ->
+                modifier != null && !modifier.hasModifierProperty(PsiModifier.PRIVATE)
+                        && !modifier.hasModifierProperty(PsiModifier.FINAL)
+            }
+        }
+        for (field in fields) {
             var optional = false
-            // each fields, find fields annotated with `BindView`
+            // each non-private fields, find fields annotated with `BindXxx`
             for (annotation in field.annotations) {
                 val annotationTypeName = annotation.qualifiedName
-                if (annotationTypeName == butterKnifeOptionalAnnotation) {
+                if (annotationTypeName == Constants.ButterKnifeOptional) {
                     optional = true
                     continue
                 }
-                if (!butterKnifeBindAnnotation.contains(annotationTypeName)) {
+                if (annotationTypeName !in Constants.ButterKnifeBindFieldAnnotation) {
                     continue
                 }
                 val parameter = annotation.parameterList.attributes
@@ -48,21 +49,52 @@ object PsiFileUtils {
                     continue
                 }
                 val viewIdExpr = (parameter[0].detachedValue as? PsiReferenceExpressionImpl)?.element
-                val resType = annotationTypeName?.replace("butterknife.Bind", "")?.let {
-                    BindResType.valueOf(it)
-                } ?: BindResType.Unknown
-                viewIdExpr?.let {
+                if (viewIdExpr == null) {
+                    System.err.println("$parameter is null")
+                    continue
+                }
+                val info = BindInfo(
+                        viewClass = field.type.canonicalText,
+                        idResExpr = viewIdExpr.text,
+                        filedName = field.name,
+                        bindAnnotation = annotation,
+                        type = BindType.get(annotation)
+                )
+                info.optional = optional
+                ret.add(info)
+                break
+            }
+        }
+
+        // method
+        val methods = psiClass.methods.filter {
+            it.modifierList.let { modifier ->
+                !modifier.hasModifierProperty(PsiModifier.PRIVATE)
+            }
+        }
+        for (method in methods) {
+            for (annotation in method.annotations) {
+                val annotationTypeName = annotation.qualifiedName
+                if (annotationTypeName !in Constants.ButterKnifeBindMethodAnnotation) {
+                    continue
+                }
+                val annotationParams = annotation.parameterList.attributes
+                for (param in annotationParams) {
+                    val viewIdExpr = (param.detachedValue as? PsiReferenceExpressionImpl)?.element
+                    if (viewIdExpr == null) {
+                        System.err.println("$param is null.")
+                        continue
+                    }
                     val info = BindInfo(
-                            viewClass = field.type.canonicalText,
-                            idResExpr = it.text,
-                            filedName = field.name,
+                            viewClass = "android.view.View",
+                            idResExpr = viewIdExpr.text,
                             bindAnnotation = annotation,
-                            resType = resType
+                            type = BindType.get(annotation),
+                            isEventBind = true,
+                            bindMethod = method
                     )
-                    info.optional = optional
                     ret.add(info)
                 }
-                break
             }
         }
         return ret
@@ -109,9 +141,8 @@ object PsiFileUtils {
                                 if (type.contains(".")) type.substring(type.lastIndexOf(".") + 1) else type,
                                 id.replace(ANDROID_ID_PREFIX, ""),
                                 bindAnnotation = null,
-                                resType = BindResType.View
+                                type = BindType.View
                         )
-                        viewInfo.genMappingField()
                         result.add(viewInfo)
                     }
                 }
