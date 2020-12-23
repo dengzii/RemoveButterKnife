@@ -2,7 +2,7 @@
 
 Remove ButterKnife binding annotations, generate `bindView` method and `findViewById` instead.  
 
-![screen_cap](https://raw.githubusercontent.com/dengzii/RemoveButterKnife/art/screen_cap.gif)
+![screen_cap](https://raw.githubusercontent.com/dengzii/RemoveButterKnife/main/art/screen_cap.gif)
 
 ## TODO
 
