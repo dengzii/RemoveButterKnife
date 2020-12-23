@@ -4,10 +4,7 @@ import com.dengzii.plugin.rbk.BindInfo
 import com.dengzii.plugin.rbk.BindType
 import com.dengzii.plugin.rbk.Config
 import com.dengzii.plugin.rbk.Constants
-import com.dengzii.plugin.rbk.utils.acceptElement
-import com.dengzii.plugin.rbk.utils.addLast
-import com.dengzii.plugin.rbk.utils.getParameterExpressions
-import com.dengzii.plugin.rbk.utils.getParameterTypes
+import com.dengzii.plugin.rbk.utils.*
 import com.intellij.lang.Language
 import com.intellij.psi.*
 import com.intellij.psi.codeStyle.CodeStyleSettings
@@ -51,16 +48,23 @@ class JavaCase : BaseCase() {
     }
 
     /**
-     * Insert call bind view method statement to specified method in [Config.insertBindViewMethodIntoMethod].
-     * Search method name in class in order of list, the call statement will insert into first name matched method,
-     * if none method call statement matched, the end of method will be insert.
+     * Insert call bind view method statement to specified method.
+     * Search method name in class in order of list [Config.insertBindViewMethodIntoMethod], the call statement will
+     * insert into first name matched method, the method must can found in [psiClass], or the bind view method call
+     * statement will not generation and insert, a [NoSuchMethodException] will be throw.
      *
-     * The insert place determine by [-]
+     * The insert place determine by the following rules:
+     * - if found *ButterKnife.bind*, will replace it.
+     * - if found the method call statement in [Config.insertCallBindViewMethodAfterCallMethod], it will insert after
+     * the first item found.
+     * - finally, if the previous cases are not matched, it insert to the last line of method.
+     *
+     * @param psiClass the PsiClass
+     * @throws NoSuchMethodException throw when no insert target found.
      */
-    @Throws(NoSuchMethodException::class, IllegalStateException::class)
-    private fun insertInvokeBindViewMethodStatement(psiClass: PsiClass): Array<PsiParameter>? {
+    @Throws(NoSuchMethodException::class)
+    private fun insertInvokeBindViewMethodStatement(psiClass: PsiClass):Boolean {
 
-        var bindViewMethodParameterList: Array<PsiParameter>? = null
         val insertAfterMethod = Config.insertCallBindViewMethodAfterCallMethod
         val insertToMethod = Config.insertBindViewMethodIntoMethod
         val bindViewMethodName = Config.methodNameBindView
@@ -75,7 +79,7 @@ class JavaCase : BaseCase() {
         }
 
         var inserted = false
-        var callStatement = factory.createStatementFromText("${bindViewMethodName}(getWindow().getDecorView());\n", null)
+        var callStatement: PsiElement
         val methodExpressionMap = mutableMapOf<String, MutableList<PsiMethodCallExpression>>()
 
         invokerMethodBody.acceptElement { element ->
@@ -91,7 +95,7 @@ class JavaCase : BaseCase() {
             val exprText = methodExpressionMap[bindViewMethodName]?.firstOrNull()?.text
             if (exprText != null) {
                 if (exprText.startsWith("this.${bindViewMethodName}") || exprText.startsWith(bindViewMethodName)) {
-                    return null
+                    return true
                 }
             }
         }
@@ -116,11 +120,30 @@ class JavaCase : BaseCase() {
             callStatement = factory.createStatementFromText("$bindViewMethodName($source);\n", null)
             bind.parent.addSiblingAfter(callStatement)
             bind.parent.delete()
-            bindViewMethodParameterList = paramTypes
             inserted = true
         }
-        // if not bind, insert to other statement.
+
+        // if not found butter knife bind, insert after specified call statement.
         if (!inserted) {
+            callStatement = when {
+                psiClass.isExtendsFrom(Config.PsiTypes.androidActivity)
+                        || psiClass.isExtendsFrom(Config.PsiTypes.androidDialog) -> {
+                    factory.createStatementFromText("${bindViewMethodName}(getWindow().getDecorView());\n", null)
+                }
+                psiClass.isExtendsFrom(Config.PsiTypes.androidFragment)
+                        || psiClass.isExtendsFrom(Config.PsiTypes.androidXFragment) -> {
+                    // TODO find bind source.
+                    factory.createStatementFromText("// TODO RemoveButterKnife Plugin: specify the source view\n " +
+                            "${bindViewMethodName}(null);\n", null)
+                }
+                psiClass.isExtendsFrom(Config.PsiTypes.androidView) -> {
+                    factory.createStatementFromText("${bindViewMethodName}(this);\n", null)
+                }
+                else -> {
+                    factory.createStatementFromText("// TODO RemoveButterKnife Plugin: specify the source view\n " +
+                            "${bindViewMethodName}(null);\n", null)
+                }
+            }
             for (m in insertAfterMethod) {
                 if (methodExpressionMap.containsKey(m)) {
                     val methodCallExpressions = methodExpressionMap[m]!!.first()
@@ -128,16 +151,17 @@ class JavaCase : BaseCase() {
                     inserted = true
                 }
             }
+            // if no specified call statement found, insert to the last line of method.
+            if (!inserted) {
+                invokerMethodBody.addLast(callStatement)
+            }
         }
-
-        if (!inserted) {
-            invokerMethodBody.addLast(callStatement)
-        }
-        return bindViewMethodParameterList
+        return true
     }
 
     /**
      * Insert `setXxxListener` code to bind method.
+     * When set listener code is inserted, the event bind annotation is deleted.
      *
      * @param bindInfo the event bind info.
      * @param bindMethodBody the bind method body.
@@ -152,16 +176,14 @@ class JavaCase : BaseCase() {
             if (it == Config.PsiTypes.androidView) "" else "(${it.canonicalText})"
         }
         val castParam = if (type == null) "" else "${type}v"
-        when (bindInfo.type) {
+        val psiStatement = when (bindInfo.type) {
             BindType.OnClick -> {
                 val statement = """
                     ${bindInfo.filedName}.setOnClickListener(v -> {
                         ${bindInfo.bindMethod!!.name}(${castParam});
                     });
                 """.trimIndent()
-                val psiStatement = factory.createStatementFromText(statement, null)
-                bindMethodBody.addLast(psiStatement)
-                bindInfo.bindAnnotation?.delete()
+                factory.createStatementFromText(statement, null)
             }
             BindType.OnLongClick -> {
                 val statement = """
@@ -169,14 +191,17 @@ class JavaCase : BaseCase() {
                         ${bindInfo.bindMethod!!.name}(${castParam});
                     });
                 """.trimIndent()
-                val psiStatement = factory.createStatementFromText(statement, null)
-                bindMethodBody.addLast(psiStatement)
-                bindInfo.bindAnnotation?.delete()
+                factory.createStatementFromText(statement, null)
             }
             else -> {
                 // TODO add more event listener support.
+                null
             }
         }
+        psiStatement ?: return false
+        bindMethodBody.addLast(psiStatement)
+        bindInfo.bindAnnotation?.delete()
+        bindInfo.bindMethod?.modifierList?.setModifierProperty(PsiModifier.PRIVATE, true)
         return true
     }
 
@@ -211,6 +236,13 @@ class JavaCase : BaseCase() {
         return butterKnifeBindStatement
     }
 
+    /**
+     * Insert view field declaration.
+     * Its insert only when the field name does not exist.
+     *
+     * @param bindInfo the bind info.
+     * @param psiClass the PsiClass.
+     */
     private fun insertViewDeclareField(bindInfo: BindInfo, psiClass: PsiClass): PsiField {
         var psiField = psiClass.findFieldByName(bindInfo.filedName, false)
         if (psiField == null) {
@@ -222,10 +254,11 @@ class JavaCase : BaseCase() {
                 psiField.modifierList?.setModifierProperty(PsiModifier.PRIVATE, true)
             }
         }
+        // remove line break
         psiField.acceptChildren(object : PsiElementVisitor() {
             override fun visitWhiteSpace(space: PsiWhiteSpace) {
                 super.visitWhiteSpace(space)
-                if (space.text == "\n") {
+                if (space.text.contains("\n")) {
                     space.delete()
                 }
             }
@@ -251,7 +284,7 @@ class JavaCase : BaseCase() {
 
     private fun insertBindResourceStatement(bindInfo: BindInfo, bindMethodBody: PsiCodeBlock) {
         var statementTemplate = Config.resBindStatement.getOrElse(bindInfo.type) { "" }
-        if (bindInfo.isEventBind){
+        if (bindInfo.isEventBind) {
             statementTemplate = Config.resBindStatement.getValue(BindType.View)
         }
         if (statementTemplate.isBlank()) {
@@ -264,6 +297,10 @@ class JavaCase : BaseCase() {
                 .replace("%{THEME}", "${paramNameBindSourceView}.getContext().getTheme()")
 
         val bindStatement = "%s = %s;".format(bindInfo.filedName, resourceExpression)
+        if (bindMethodBody.text.contains(bindStatement)) {
+            println("bind statement already exist.")
+            return
+        }
         val bindPsiStatement = factory.createStatementFromText(bindStatement, null)
         bindMethodBody.addLast(bindPsiStatement)
         if (!bindInfo.isEventBind) {

@@ -25,7 +25,7 @@ class CodeWriter private constructor(
     @Throws(RuntimeException::class)
     override fun run() {
         val javaCase = JavaCase()
-        javaCase.setNext(KotlinCase())
+//        javaCase.setNext(KotlinCase())
         javaCase.dispose(psiClass, bindInfos)
     }
 }

@@ -34,10 +34,19 @@ fun PsiClass.isExtendsFrom(qualifiedClassName: String): Boolean {
     return ret
 }
 
-fun PsiCodeBlock.addLast(element: PsiElement){
-    addAfter(element, lastBodyElement)
+fun PsiClass.isExtendsFrom(type: PsiType): Boolean {
+    var superClass = this.superClass
+    var ret = false
+    while (superClass != null && !ret) {
+        ret = superClass.qualifiedName == type.canonicalText
+        superClass = superClass.superClass
+    }
+    return ret
 }
 
+fun PsiCodeBlock.addLast(element: PsiElement) {
+    addAfter(element, lastBodyElement)
+}
 
 
 inline fun PsiElement.acceptElement(crossinline visitor: (PsiElement) -> Unit) {

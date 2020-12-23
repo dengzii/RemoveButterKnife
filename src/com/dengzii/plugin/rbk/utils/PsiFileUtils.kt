@@ -5,6 +5,7 @@ import com.dengzii.plugin.rbk.BindType
 import com.dengzii.plugin.rbk.Constants
 import com.intellij.openapi.project.Project
 import com.intellij.psi.*
+import com.intellij.psi.impl.source.tree.java.PsiArrayInitializerMemberValueImpl
 import com.intellij.psi.impl.source.tree.java.PsiReferenceExpressionImpl
 import com.intellij.psi.search.FilenameIndex
 import com.intellij.psi.search.GlobalSearchScope
@@ -80,20 +81,23 @@ object PsiFileUtils {
                 }
                 val annotationParams = annotation.parameterList.attributes
                 for (param in annotationParams) {
-                    val viewIdExpr = (param.detachedValue as? PsiReferenceExpressionImpl)?.element
-                    if (viewIdExpr == null) {
-                        System.err.println("$param is null.")
-                        continue
+                    val value = param.detachedValue ?: continue
+                    val viewIdExprs = when (value) {
+                        is PsiArrayInitializerMemberValueImpl -> value.initializers.map { it.text }
+                        is PsiReferenceExpressionImpl -> listOf(value.element.text)
+                        else -> listOf()
                     }
-                    val info = BindInfo(
-                            viewClass = "android.view.View",
-                            idResExpr = viewIdExpr.text,
-                            bindAnnotation = annotation,
-                            type = BindType.get(annotation),
-                            isEventBind = true,
-                            bindMethod = method
-                    )
-                    ret.add(info)
+                    viewIdExprs.forEach {
+                        val info = BindInfo(
+                                viewClass = "android.view.View",
+                                idResExpr = it,
+                                bindAnnotation = annotation,
+                                type = BindType.get(annotation),
+                                isEventBind = true,
+                                bindMethod = method
+                        )
+                        ret.add(info)
+                    }
                 }
             }
         }

@@ -13,15 +13,15 @@ object Config {
 
     val LangeJava = Language.findLanguageByID("JAVA")
     val LangeKotlin = Language.findLanguageByID("kotlin")
+
     var methodNameBindView = "bindView"
     var fieldNamePrefix = "m"
     var addPrivateModifier = true
 
+    // Insert the call bindView method statement into the first matching method in the list below.
     var insertBindViewMethodIntoMethod = mutableListOf("onCreate", "onCreateView")
-
+    // Insert the call bindView method statement after the first matching method call expression statement in the list below.
     var insertCallBindViewMethodAfterCallMethod = mutableListOf("setContentView", "inflate")
-
-    var formatCode = true
 
     var resBindStatement = mapOf(
             Pair(BindType.Anim, "%{SOURCE}.getResource().getAnimation(%{RES_ID})"),
@@ -37,16 +37,13 @@ object Config {
             Pair(BindType.Unknown, "")
     )
 
-    var onClickListenerStatement = """
-            %{VIEW}.setOnClickListener(v -> {
-                %{EVENT_METHOD}(v);
-            });
-    """.trimIndent()
-
     object PsiTypes {
 
         val androidView by lazy { findByName("android.view.View") }
         val androidActivity by lazy { findByName("android.content.Activity") }
+        val androidFragment by lazy { findByName("android.content.Fragment") }
+        val androidXFragment by lazy { findByName("androidx.fragment.app.Fragment") }
+        val androidDialog by lazy { findByName("android.app.Dialog") }
 
         private lateinit var project: Project
 
