@@ -8,7 +8,12 @@
 
     <description>
         <![CDATA[
-        Remove ButterKnife binding annotations, generate `bindView` method and `findViewById` codes instead.
+        <h2>Remove ButterKnife</h2>
+        <b>Remove ButterKnife binding annotations, generate `bindView` method and `findViewById` instead.</b><br>
+
+        <a href="https://github.com/dengzii/RemoveButterKnife/issues/new">Feedback or Bug Report</a>
+        <img src='https://raw.githubusercontent.com/dengzii/RemoveButterKnife/main/art/screen_cap.gif'/>
+
         ]]>
     </description>
 
