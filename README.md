@@ -1,6 +1,21 @@
 # Remove ButterKnife
 
-Remove ButterKnife binding annotations, generate `bindView` method and `findViewById` codes instead.  
+Remove ButterKnife binding annotations, generate `bindView` method and `findViewById` instead.  
+
+![screen_cap](https://raw.githubusercontent.com/dengzii/RemoveButterKnife/art/screen_cap.gif)
+
+## TODO
+
+- [x] Activity, View, Dialog, Fragment.
+- [x] Replace `ButterKnief.bind` with `bindView` method.
+- [x] `@BindXxx` => `findViewById` or `getResource().getXxx(R.id.xx)`.
+- [x] `@OnClick`, `@OnLongClick` => `setOnClickListener`, `setOnLongClickListener`
+- [ ]  `@OnCheckedChanged`, `@OnEditorAction`, `@OnFocusChange`, `@OnItemClick`, `@OnItemSelected`, `@OnPageChange`, `@OnTouch`
+- [ ] `@BindArray` => `getResource().getXxxArray(R.id.xx)`.
+- [ ] `@BindViews` => `findViewById`
+- [ ] Custom field name, bind method name.
+- [ ] Enable generation option.
+- [ ] Remove import statement on success.
 
 ## Install
 
@@ -14,7 +29,7 @@ Remove ButterKnife binding annotations, generate `bindView` method and `findView
 
 ## Usage
 
-Right mouse button > Refactor > Remove ButterKnife
+Code Editor > Right Mouse Button > Refactor > Remove ButterKnife
 
 ## Build 
 
