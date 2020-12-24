@@ -2,7 +2,7 @@
 
     <name>Remove ButterKnife</name>
     <id>com.dengzii.plugin.rbk</id>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <idea-version since-build="191.8026.42"/>
     <vendor email="dengzii@foxmail.com" url="https://github.com/dengzii">dengzi</vendor>
 
