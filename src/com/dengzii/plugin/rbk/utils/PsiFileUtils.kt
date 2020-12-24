@@ -6,6 +6,7 @@ import com.dengzii.plugin.rbk.Constants
 import com.intellij.openapi.project.Project
 import com.intellij.psi.*
 import com.intellij.psi.impl.source.tree.java.PsiArrayInitializerMemberValueImpl
+import com.intellij.psi.impl.source.tree.java.PsiIdentifierImpl
 import com.intellij.psi.impl.source.tree.java.PsiReferenceExpressionImpl
 import com.intellij.psi.search.FilenameIndex
 import com.intellij.psi.search.GlobalSearchScope
@@ -57,7 +58,7 @@ object PsiFileUtils {
                 val info = BindInfo(
                         viewClass = field.type.canonicalText,
                         idResExpr = viewIdExpr.text,
-                        filedName = field.name,
+                        filedName = (field.nameIdentifier as PsiIdentifierImpl).text,
                         bindAnnotation = annotation,
                         type = BindType.get(annotation)
                 )

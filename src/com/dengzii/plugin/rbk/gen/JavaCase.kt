@@ -9,7 +9,7 @@ import com.intellij.lang.Language
 import com.intellij.psi.*
 import com.intellij.psi.codeStyle.CodeStyleSettings
 import com.intellij.psi.impl.source.codeStyle.CodeFormatterFacade
-import com.intellij.refactoring.extractMethod.newImpl.ExtractMethodHelper.addSiblingAfter
+import com.intellij.psi.impl.source.tree.java.PsiIdentifierImpl
 
 /**
  *
@@ -63,7 +63,7 @@ class JavaCase : BaseCase() {
      * @throws NoSuchMethodException throw when no insert target found.
      */
     @Throws(NoSuchMethodException::class)
-    private fun insertInvokeBindViewMethodStatement(psiClass: PsiClass):Boolean {
+    private fun insertInvokeBindViewMethodStatement(psiClass: PsiClass): Boolean {
 
         val insertAfterMethod = Config.insertCallBindViewMethodAfterCallMethod
         val insertToMethod = Config.insertBindViewMethodIntoMethod
@@ -118,7 +118,7 @@ class JavaCase : BaseCase() {
                 "$sourceExpr.getWindow().getDecorView()"
             }
             callStatement = factory.createStatementFromText("$bindViewMethodName($source);\n", null)
-            bind.parent.addSiblingAfter(callStatement)
+            invokerMethodBody.addAfter(callStatement, bind.parent)
             bind.parent.delete()
             inserted = true
         }
@@ -147,7 +147,7 @@ class JavaCase : BaseCase() {
             for (m in insertAfterMethod) {
                 if (methodExpressionMap.containsKey(m)) {
                     val methodCallExpressions = methodExpressionMap[m]!!.first()
-                    methodCallExpressions.parent.addSiblingAfter(callStatement)
+                    invokerMethodBody.addAfter(callStatement, methodCallExpressions.parent)
                     inserted = true
                 }
             }
@@ -274,7 +274,7 @@ class JavaCase : BaseCase() {
             ret = psiClass.add(ret) as PsiMethod
         }
         val paramBindView = ret.parameterList.parameters.filter {
-            it.name == paramNameBindSourceView
+            (it.nameIdentifier as PsiIdentifierImpl).text == paramNameBindSourceView
         }
         if (paramBindView.isNullOrEmpty()) {
             ret.parameterList.add(factory.createParameter(paramNameBindSourceView, Config.PsiTypes.androidView))
