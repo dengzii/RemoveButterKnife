@@ -1,6 +1,7 @@
 package com.dengzii.plugin.rbk
 
 import com.dengzii.plugin.rbk.gen.CodeWriter
+import com.dengzii.plugin.rbk.ui.MainDialog
 import com.dengzii.plugin.rbk.utils.PsiFileUtils
 import com.dengzii.plugin.rbk.utils.getDeclaredClass
 import com.intellij.openapi.actionSystem.AnAction
@@ -23,13 +24,15 @@ class MainAction : AnAction() {
             return
         }
         Config.PsiTypes.init(project!!)
-
         val psiClass = psiFile!!.getDeclaredClass().firstOrNull() ?: return
-        val bindInfo = PsiFileUtils.getButterKnifeViewBindInfo(psiClass)
-        if (bindInfo.isEmpty()) {
-            return
+
+        MainDialog.show_ {
+            val bindInfo = PsiFileUtils.getButterKnifeViewBindInfo(psiClass)
+            if (bindInfo.isEmpty()) {
+                return@show_
+            }
+            CodeWriter.run(psiClass, bindInfo)
         }
-        CodeWriter.run(psiClass, bindInfo)
     }
 
     override fun update(e: AnActionEvent) {

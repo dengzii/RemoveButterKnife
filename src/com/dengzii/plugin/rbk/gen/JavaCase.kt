@@ -73,6 +73,7 @@ class JavaCase : BaseCase() {
         // find statement insertion target method in class.
         for (m in insertToMethod) {
             invokerMethodBody = psiClass.findMethodsByName(m, false).firstOrNull()?.body ?: continue
+            break
         }
         if (invokerMethodBody == null) {
             throw NoSuchMethodError("Method $insertToMethod not found in class ${psiClass.qualifiedName}.")
