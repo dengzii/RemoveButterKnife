@@ -2,6 +2,7 @@ package com.dengzii.plugin.rbk.gen
 
 import com.dengzii.plugin.rbk.BindInfo
 import com.dengzii.plugin.rbk.Config
+import com.dengzii.plugin.rbk.Constants
 import com.dengzii.plugin.rbk.utils.KtPsiUtils.getFirstFun
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiElement
@@ -25,7 +26,7 @@ class KotlinCase : BaseCase() {
     }
 
     override fun dispose(psiClass: PsiClass, bindInfos: List<BindInfo>) {
-        if (!psiClass.language.`is`(Config.LangeKotlin)) {
+        if (!psiClass.language.`is`(Constants.langKotlin)) {
             next(psiClass, bindInfos)
             return
         }

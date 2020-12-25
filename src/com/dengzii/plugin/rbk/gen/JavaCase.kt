@@ -20,7 +20,7 @@ class JavaCase : BaseCase() {
     private lateinit var factory: PsiElementFactory
 
     override fun dispose(psiClass: PsiClass, bindInfos: List<BindInfo>) {
-        if (!psiClass.language.`is`(Config.LangeJava)) {
+        if (!psiClass.language.`is`(Constants.langJava)) {
             next(psiClass, bindInfos)
             return
         }
@@ -43,8 +43,19 @@ class JavaCase : BaseCase() {
                 insertBindEvent(bindInfo, methodBody)
             }
         }
-        // insert invoke bind view method to method.
-        insertInvokeBindViewMethodStatement(psiClass)
+
+        var inserted = false
+        if (Config.priorityReplaceButterKnifeBind){
+            val butterKnifeBind = findButterKnifeBindStatement(psiClass)
+            if (butterKnifeBind != null) {
+                butterKnifeBind.replace(butterKnifeBind)
+                inserted = true
+            }
+        }
+        if (!inserted){
+            // insert invoke bind view method to method.
+            insertInvokeBindViewMethodStatement(psiClass)
+        }
     }
 
     /**
@@ -76,11 +87,10 @@ class JavaCase : BaseCase() {
             break
         }
         if (invokerMethodBody == null) {
+            NotificationUtils.showError("Class ${psiClass.qualifiedName} does not contain method: $insertToMethod", "Error")
             throw NoSuchMethodError("Method $insertToMethod not found in class ${psiClass.qualifiedName}.")
         }
 
-        var inserted = false
-        var callStatement: PsiElement
         val methodExpressionMap = mutableMapOf<String, MutableList<PsiMethodCallExpression>>()
 
         invokerMethodBody.acceptElement { element ->
@@ -103,30 +113,14 @@ class JavaCase : BaseCase() {
 
         // replace ButterKnife bind.
         val bind = methodExpressionMap["bind"]?.first { "ButterKnife.bind" in it.text }
+
         if (bind != null) {
-            val paramExprs = bind.getParameterExpressions()
-            val paramTypes = bind.getParameterTypes()
-            if (paramTypes.isNullOrEmpty() || paramTypes.size != paramTypes.size) {
-                throw IllegalStateException("Unexpected parameters size.")
-            }
-            val argSourceIndex = paramTypes.size - 1
-            val sourceType = paramTypes[argSourceIndex].type
-            val sourceExpr = paramExprs[argSourceIndex].text
 
-            val source = if (sourceType == Config.PsiTypes.androidView) {
-                sourceExpr
-            } else {
-                "$sourceExpr.getWindow().getDecorView()"
-            }
-            callStatement = factory.createStatementFromText("$bindViewMethodName($source);\n", null)
-            invokerMethodBody.addAfter(callStatement, bind.parent)
-            bind.parent.delete()
-            inserted = true
-        }
+            replaceButterKnifeBind(bind, bindViewMethodName)
 
-        // if not found butter knife bind, insert after specified call statement.
-        if (!inserted) {
-            callStatement = when {
+        } else {
+            // if not found butter knife bind, insert after specified call statement.
+            val callStatement = when {
                 psiClass.isExtendsFrom(Config.PsiTypes.androidActivity)
                         || psiClass.isExtendsFrom(Config.PsiTypes.androidDialog) -> {
                     factory.createStatementFromText("${bindViewMethodName}(getWindow().getDecorView());\n", null)
@@ -145,6 +139,7 @@ class JavaCase : BaseCase() {
                             "${bindViewMethodName}(null);\n", null)
                 }
             }
+            var inserted = false
             for (m in insertAfterMethod) {
                 if (methodExpressionMap.containsKey(m)) {
                     val methodCallExpressions = methodExpressionMap[m]!!.first()
@@ -235,6 +230,30 @@ class JavaCase : BaseCase() {
             })
         }
         return butterKnifeBindStatement
+    }
+
+    /**
+     * Replace ButterKnife bind statement with call bindView method.
+     * @param bind the ButterKnife bind.
+     * @param bindViewMethodName the bind view method name.
+     */
+    private fun replaceButterKnifeBind(bind: PsiMethodCallExpression, bindViewMethodName: String) {
+        val paramExprs = bind.getParameterExpressions()
+        val paramTypes = bind.getParameterTypes()
+        if (paramTypes.isNullOrEmpty() || paramTypes.size != paramTypes.size) {
+            throw IllegalStateException("Unexpected parameters size.")
+        }
+        val argSourceIndex = paramTypes.size - 1
+        val sourceType = paramTypes[argSourceIndex].type
+        val sourceExpr = paramExprs[argSourceIndex].text
+
+        val source = if (sourceType == Config.PsiTypes.androidView) {
+            sourceExpr
+        } else {
+            "$sourceExpr.getWindow().getDecorView()"
+        }
+        val callStatement = factory.createStatementFromText("$bindViewMethodName($source);\n", null)
+        bind.parent.replace(callStatement)
     }
 
     /**

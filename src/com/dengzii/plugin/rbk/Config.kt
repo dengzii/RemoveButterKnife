@@ -1,6 +1,5 @@
 package com.dengzii.plugin.rbk
 
-import com.intellij.lang.Language
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiType
 import com.intellij.psi.search.GlobalSearchScope
@@ -11,15 +10,14 @@ import com.intellij.psi.search.GlobalSearchScope
  */
 object Config {
 
-    val LangeJava = Language.findLanguageByID("JAVA")
-    val LangeKotlin = Language.findLanguageByID("kotlin")
-
     var methodNameBindView = "bindView"
     var fieldNamePrefix = "m"
     var addPrivateModifier = true
+    var priorityReplaceButterKnifeBind = false
 
     // Insert the call bindView method statement into the first matching method in the list below.
     var insertBindViewMethodIntoMethod = mutableListOf("onCreate", "onCreateView")
+
     // Insert the call bindView method statement after the first matching method call expression statement in the list below.
     var insertCallBindViewMethodAfterCallMethod = mutableListOf("setContentView", "inflate")
 

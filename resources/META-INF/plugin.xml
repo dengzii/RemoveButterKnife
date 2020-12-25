@@ -2,31 +2,52 @@
 
     <name>Remove ButterKnife</name>
     <id>com.dengzii.plugin.rbk</id>
-    <version>1.0.1</version>
+    <version>1.2.1</version>
     <idea-version since-build="191.8026.42"/>
     <vendor email="dengzii@foxmail.com" url="https://github.com/dengzii">dengzi</vendor>
 
     <description>
         <![CDATA[
         <h2>Remove ButterKnife</h2>
-        <b>Remove ButterKnife binding annotations, generate `bindView` method and `findViewById` instead.</b><br>
-
+        <br>
+        <b>Remove ButterKnife binding annotations, generate `bindView` method and `findViewById` instead.</b>
+        <br>
+        <br>
+        <b>Usage</b><br>
+        1. In Code Editor > Right Mouse button > Refactor > Remove ButterKnife <br>
+        2. In Project View > Right Mouse Button > Remove ButterKnife in Directory <br>
+        <br>
+        <a href="https://github.com/dengzii/RemoveButterKnife">Source Code</a>
+        <br>
         <a href="https://github.com/dengzii/RemoveButterKnife/issues/new">Feedback or Bug Report</a>
+        <br>
+        <br>
         <img src='https://raw.githubusercontent.com/dengzii/RemoveButterKnife/main/art/screen_cap.gif'/>
-
         ]]>
     </description>
 
-    <!--    <change-notes></change-notes>-->
+    <change-notes>
+        <![CDATA[
+            1.2.1 (2020-12-25)<br>
+            Support multiple file refactor.<br>
+            ]]>
+    </change-notes>
 
     <depends>com.intellij.modules.java</depends>
     <depends>org.jetbrains.kotlin</depends>
 
     <actions>
-        <action id="com.dengzii.plugn.rbk.main" class="com.dengzii.plugin.rbk.MainAction"
-                text="Remove ButterKnife" description="Remove ButterKnife and generate findViewById">
+        <action id="com.dengzii.plugn.rbk.main"
+                class="com.dengzii.plugin.rbk.MainAction"
+                text="Remove ButterKnife"
+                description="Remove ButterKnife and generate findViewById">
             <add-to-group group-id="RefactoringMenu" anchor="last"/>
-            <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt 1"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt 5"/>
+        </action>
+        <action id="com.dengzii.plugn.rbk.project"
+                class="com.dengzii.plugin.rbk.ProjectAction"
+                text="Remove ButterKnife in Directory">
+            <add-to-group group-id="ProjectViewPopupMenuRefactoringGroup" anchor="last"/>
         </action>
     </actions>
 

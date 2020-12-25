@@ -1,7 +1,12 @@
 package com.dengzii.plugin.rbk
 
+import com.intellij.lang.Language
+
 @Suppress("SpellCheckingInspection")
 object Constants {
+
+    val langJava = Language.findLanguageByID("JAVA")
+    val langKotlin = Language.findLanguageByID("kotlin")
 
     const val CLASS_BUTTTER_KNIFE = "butterknife.ButterKnife"
 

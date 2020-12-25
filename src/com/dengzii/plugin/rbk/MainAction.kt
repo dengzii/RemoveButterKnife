@@ -2,7 +2,7 @@ package com.dengzii.plugin.rbk
 
 import com.dengzii.plugin.rbk.gen.CodeWriter
 import com.dengzii.plugin.rbk.ui.MainDialog
-import com.dengzii.plugin.rbk.utils.PsiFileUtils
+import com.dengzii.plugin.rbk.utils.ButterKnifeUtils
 import com.dengzii.plugin.rbk.utils.getDeclaredClass
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -26,8 +26,11 @@ class MainAction : AnAction() {
         Config.PsiTypes.init(project!!)
         val psiClass = psiFile!!.getDeclaredClass().firstOrNull() ?: return
 
+        if (!ButterKnifeUtils.isImportedButterKnife(psiFile)) {
+            return
+        }
         MainDialog.show_ {
-            val bindInfo = PsiFileUtils.getButterKnifeViewBindInfo(psiClass)
+            val bindInfo = ButterKnifeUtils.getButterKnifeViewBindInfo(psiClass)
             if (bindInfo.isEmpty()) {
                 return@show_
             }
@@ -42,12 +45,12 @@ class MainAction : AnAction() {
         val editor = e.getData(CommonDataKeys.EDITOR)
         e.presentation.isEnabledAndVisible = true
         if (isNull(project, psiFile, editor)) {
-            e.presentation.isEnabledAndVisible = false
+            e.presentation.isEnabled = false
             return
         }
         val language = psiFile!!.language
-        if (!language.`is`(Config.LangeJava) && !language.`is`(Config.LangeKotlin)) {
-            e.presentation.isEnabledAndVisible = false
+        if (!language.`is`(Constants.langJava) && !language.`is`(Constants.langKotlin)) {
+            e.presentation.isEnabled = false
         }
     }
 
