@@ -10,8 +10,8 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.PsiManager
 import org.jetbrains.kotlin.idea.KotlinFileType
-import org.jetbrains.kotlin.idea.core.util.toPsiFile
 
 class ProjectAction : AnAction() {
 
@@ -24,7 +24,7 @@ class ProjectAction : AnAction() {
         val psiFiles = allFile.filter {
             it.fileType is JavaFileType || it.fileType is KotlinFileType
         }.mapNotNull {
-            it.toPsiFile(project)
+            PsiManager.getInstance(project).findFile(it)
         }
         MainDialog.show_ {
             Config.PsiTypes.init(project)
