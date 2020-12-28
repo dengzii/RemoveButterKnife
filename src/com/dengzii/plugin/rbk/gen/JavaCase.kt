@@ -45,14 +45,14 @@ class JavaCase : BaseCase() {
         }
 
         var inserted = false
-        if (Config.priorityReplaceButterKnifeBind){
+        if (Config.priorityReplaceButterKnifeBind) {
             val butterKnifeBind = findButterKnifeBindStatement(psiClass)
             if (butterKnifeBind != null) {
                 butterKnifeBind.replace(butterKnifeBind)
                 inserted = true
             }
         }
-        if (!inserted){
+        if (!inserted) {
             // insert invoke bind view method to method.
             insertInvokeBindViewMethodStatement(psiClass)
         }
@@ -119,6 +119,7 @@ class JavaCase : BaseCase() {
             replaceButterKnifeBind(bind, bindViewMethodName)
 
         } else {
+            var todo = false
             // if not found butter knife bind, insert after specified call statement.
             val callStatement = when {
                 psiClass.isExtendsFrom(Config.PsiTypes.androidActivity)
@@ -127,28 +128,35 @@ class JavaCase : BaseCase() {
                 }
                 psiClass.isExtendsFrom(Config.PsiTypes.androidFragment)
                         || psiClass.isExtendsFrom(Config.PsiTypes.androidXFragment) -> {
-                    // TODO find bind source.
-                    factory.createStatementFromText("// TODO RemoveButterKnife Plugin: specify the source view\n " +
-                            "${bindViewMethodName}(null);\n", null)
+                    todo = true
+                    factory.createStatementFromText("${bindViewMethodName}(null);\n", null)
                 }
                 psiClass.isExtendsFrom(Config.PsiTypes.androidView) -> {
                     factory.createStatementFromText("${bindViewMethodName}(this);\n", null)
                 }
                 else -> {
-                    factory.createStatementFromText("// TODO RemoveButterKnife Plugin: specify the source view\n " +
-                            "${bindViewMethodName}(null);\n", null)
+                    todo = true
+                    factory.createStatementFromText("${bindViewMethodName}(null);\n", null)
                 }
             }
             var inserted = false
             for (m in insertAfterMethod) {
                 if (methodExpressionMap.containsKey(m)) {
                     val methodCallExpressions = methodExpressionMap[m]!!.first()
+                    if (todo) {
+                        val ann = factory.createCommentFromText("// TODO RemoveButterKnife Plugin: specify the source view", null)
+                        invokerMethodBody.addAfter(ann, methodCallExpressions.parent)
+                    }
                     invokerMethodBody.addAfter(callStatement, methodCallExpressions.parent)
                     inserted = true
                 }
             }
             // if no specified call statement found, insert to the last line of method.
             if (!inserted) {
+                if (todo) {
+                    val ann = factory.createCommentFromText("// TODO RemoveButterKnife Plugin: specify the source view", null)
+                    invokerMethodBody.addLast(ann)
+                }
                 invokerMethodBody.addLast(callStatement)
             }
         }
