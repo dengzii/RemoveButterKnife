@@ -2,7 +2,7 @@
 
     <name>Remove ButterKnife</name>
     <id>com.dengzii.plugin.rbk</id>
-    <version>1.2.2</version>
+    <version>1.2.3</version>
     <idea-version since-build="191.8026.42"/>
     <vendor email="dengzii@foxmail.com" url="https://github.com/dengzii">dengzi</vendor>
 
@@ -28,9 +28,8 @@
 
     <change-notes>
         <![CDATA[
-            1.2.2 (2020-12-28)<br>
+            1.2.1 (2020-12-25)<br>
             Support multiple file refactor.<br>
-            Fix todo comment generation error.<br>
             ]]>
     </change-notes>
 
