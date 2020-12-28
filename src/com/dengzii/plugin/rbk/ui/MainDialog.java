@@ -19,6 +19,7 @@ public class MainDialog extends JDialog {
     JButton OKButton;
     JPanel contentPanel;
     JCheckBox priorityToSearchAndCheckBox;
+    JCheckBox insertToTheFirstCheckBox;
 
     private final Callback callback;
 
@@ -52,6 +53,7 @@ public class MainDialog extends JDialog {
         Config.INSTANCE.setInsertBindViewMethodIntoMethod(getResult(insertToMethodTextField));
         Config.INSTANCE.setInsertCallBindViewMethodAfterCallMethod(getResult(insertAfterTextField));
         Config.INSTANCE.setPriorityReplaceButterKnifeBind(priorityToSearchAndCheckBox.isSelected());
+        Config.INSTANCE.setInsertCallBindViewToFirstLine(insertToTheFirstCheckBox.isSelected());
         dispose();
         callback.ok();
     }

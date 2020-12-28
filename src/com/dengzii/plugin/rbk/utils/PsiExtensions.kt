@@ -48,6 +48,10 @@ fun PsiCodeBlock.addLast(element: PsiElement) {
     addAfter(element, lastBodyElement)
 }
 
+fun PsiCodeBlock.addFirst(element: PsiElement){
+    addBefore(element, firstBodyElement)
+}
+
 
 inline fun PsiElement.acceptElement(crossinline visitor: (PsiElement) -> Unit) {
     acceptChildren(object : PsiElementVisitor() {

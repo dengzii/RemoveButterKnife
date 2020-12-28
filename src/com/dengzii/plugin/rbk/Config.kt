@@ -14,6 +14,7 @@ object Config {
     var fieldNamePrefix = "m"
     var addPrivateModifier = true
     var priorityReplaceButterKnifeBind = false
+    var insertCallBindViewToFirstLine = false
 
     // Insert the call bindView method statement into the first matching method in the list below.
     var insertBindViewMethodIntoMethod = mutableListOf("onCreate", "onCreateView")

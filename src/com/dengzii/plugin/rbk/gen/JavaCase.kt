@@ -153,11 +153,20 @@ class JavaCase : BaseCase() {
             }
             // if no specified call statement found, insert to the last line of method.
             if (!inserted) {
-                if (todo) {
-                    val ann = factory.createCommentFromText("// TODO RemoveButterKnife Plugin: specify the source view", null)
-                    invokerMethodBody.addLast(ann)
+
+                if (Config.insertCallBindViewToFirstLine){
+                    invokerMethodBody.addFirst(callStatement)
+                    if (todo) {
+                        val ann = factory.createCommentFromText("// TODO RemoveButterKnife Plugin: specify the source view", null)
+                        invokerMethodBody.addFirst(ann)
+                    }
+                }else {
+                    invokerMethodBody.addLast(callStatement)
+                    if (todo) {
+                        val ann = factory.createCommentFromText("// TODO RemoveButterKnife Plugin: specify the source view", null)
+                        invokerMethodBody.addLast(ann)
+                    }
                 }
-                invokerMethodBody.addLast(callStatement)
             }
         }
         return true
