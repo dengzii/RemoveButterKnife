@@ -28,8 +28,9 @@
 
     <change-notes>
         <![CDATA[
-            1.2.1 (2020-12-25)<br>
+            1.2.2 (2020-12-28)<br>
             Support multiple file refactor.<br>
+            Fix todo comment generation error.<br>
             ]]>
     </change-notes>
 
